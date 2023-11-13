@@ -4,6 +4,19 @@
 
 using namespace std;
 
+template <typename T>
+ struct Node {
+    Node<T>* left;
+    Node<T>* right;
+    Node<T>* parent;
+    T value;
+    int height;
+    size_t size;
+    explicit Node(T& _value):left(nullptr), right(nullptr),parent(nullptr), value(_value),height(1), size(1){}
+    Node(T& _value, Node<T>* _parent): left(nullptr), right(nullptr), parent(_parent), value(_value),height(1), size(1){}
+    ~Node(){}
+};
+
 template < typename T >
 struct Array {
     bool empty() const {
@@ -22,12 +35,12 @@ struct Array {
 
     const T& operator [] (size_t index) const{
         if(size() <= index) throw std::out_of_range("[] index");
-        Node* target = accessAt(root, index);
+        Node<T>* target = accessAt(root, index);
         return target->value;
     }
     T& operator [] (size_t index){
         if(size() <= index) throw std::out_of_range("[] index");
-        Node* target = accessAt(root, index);
+        Node<T>* target = accessAt(root, index);
         return target->value;
     }
 
@@ -44,7 +57,7 @@ struct Array {
     bool insert(size_t index, T value) {
         if(size() < index) throw std::out_of_range("insert index");
         if(root == nullptr && index == 0){
-            root = new Node(value);
+            root = new Node<T>(value);
             updateHeight(root);
             return true;
         }
@@ -66,26 +79,15 @@ struct Array {
     }
 
 private:
-    struct Node {
-        Node* left;
-        Node* right;
-        Node* parent;
-        T value;
-        int height;
-        size_t size;
-        explicit Node(T& _value):left(nullptr), right(nullptr),parent(nullptr), value(_value),height(1), size(1){}
-        Node(T& _value, Node* _parent): left(nullptr), right(nullptr), parent(_parent), value(_value),height(1), size(1){}
-        ~Node(){}
-    };
 
-    void deleteSubTree(Node* node){
+    void deleteSubTree(Node<T>* node){
         if(node == nullptr) return;
         deleteSubTree(node->left);
         deleteSubTree(node->right);
         delete node;
     }
 
-    Node* accessAt(Node* node, size_t index) const {
+    Node<T>* accessAt(Node<T>* node, size_t index) const {
         if(node == nullptr) throw std::out_of_range("[] index");
         size_t left_size = node->left ? node->left->size: 0;
         if(index < left_size){
@@ -98,7 +100,7 @@ private:
     }
 
 
-    void checkrelation(Node* node){
+    void checkrelation(Node<T>* node){
         if(node == nullptr) return;
         if(node->left) {
             if(node->left->parent != node){
@@ -121,7 +123,7 @@ private:
         }
     }
 
-    int recHeight(Node* node){
+    int recHeight(Node<T>* node){
         if(node== nullptr){
             return 0;
         }
@@ -144,8 +146,8 @@ private:
     }
 
 
-    Node* RRR(Node* root){
-        Node *tmp_node = root->right;
+    Node<T>* RRR(Node<T>* root){
+        Node<T>*tmp_node = root->right;
         root->right = tmp_node->left;
 
         if(tmp_node->left != nullptr)
@@ -171,8 +173,8 @@ private:
     }
 
 
-    Node* LLR(Node* root){
-        Node *tmp_node = root->left;
+    Node<T>* LLR(Node<T>* root){
+        Node<T> *tmp_node = root->left;
         root->left = tmp_node->right;
         if(tmp_node->right != nullptr)
             tmp_node->right->parent = root;
@@ -195,17 +197,17 @@ private:
         return root;
     }
 
-    Node* LRR(Node* root){
+    Node<T>* LRR(Node<T>* root){
         root->left = RRR(root->left);
         return LLR(root);
     }
 
-    Node* RLR(Node* root){
+    Node<T>* RLR(Node<T>* root){
         root->right = LLR(root->right);
         return RRR(root);
     }
 
-    Node* Balance(Node* c_root){
+    Node<T>* Balance(Node<T>* c_root){
         int firstheight = 0;
         int secondheight = 0;
 
@@ -241,9 +243,9 @@ private:
 
 
 
-    Node* insertAtNode(Node* node, Node* parent, size_t index, T value){
+    Node<T>* insertAtNode(Node<T>* node, Node<T>* parent, size_t index, T value){
         if(node == nullptr){
-            node = new Node(value, parent);
+            node = new Node<T>(value, parent);
             return node;
         }
         size_t left_size = node->left ? node->left->size: 0;
@@ -258,7 +260,7 @@ private:
         return node;
     }
 
-    Node* eraseAtNode(Node* node, size_t index){
+    Node<T>* eraseAtNode(Node<T>* node, size_t index){
         if(node == nullptr) {
             return nullptr;
         }
@@ -270,23 +272,109 @@ private:
             node->right = eraseAtNode(node->right, index - left_size -1);
         }else{
             if(node->left == nullptr || node->right == nullptr){
-                Node* temp = node->left ? node->left : node->right;
+                Node<T>* temp = node->left ? node->left : node->right;
                 if(temp == nullptr){
                     temp = node;
                     node = nullptr;
+                    delete temp;
                 }else{
-                    node->value = std::move(temp->value);
-                    node->left = temp->left;
-                    node->right = temp->right;
+                    // node->value = std::move(temp->value);
+                    // node->left = temp->left;
+                    // node->right = temp->right;
                     // but not parent;
+                    temp->parent = node->parent;
+                    delete node;
+                    node = temp;
                 }
-                delete temp;
+                
             }else{
-                Node* temp = node->right;
+                Node<T>* temp = node->right;
                 while(temp->left != nullptr){
                     temp = temp->left;
                 }
-                node->value = temp->value;
+                // Node<T> temp_pointer = *node;
+
+                Node<T>* node_left = node->left;
+                Node<T>* node_right = node->right;
+                Node<T>* node_parent = node->parent;
+
+                Node<T>* temp_left = temp->left;
+                Node<T>* temp_right = temp->right;
+                Node<T>* temp_parent = temp->parent;
+
+
+                if(node_left != nullptr){
+                    node_left->parent = temp;
+                }
+                if(node_right != nullptr){
+                    node_right->parent = temp;
+                }
+                if(node_parent != nullptr){
+                    if(node_parent->left == node){
+                        node_parent->left = temp;
+                    }else{
+                        node_parent->right = temp;
+                    }
+                }
+                if(temp_left != nullptr){
+                    temp_left->parent = node;
+                }
+                if(temp_right != nullptr){
+                    temp_right->parent = node;
+                }
+                if(temp_parent != nullptr){
+                    if(temp_parent->left == temp){
+                        temp_parent->left = node;
+                    }else{
+                        temp_parent->right = node;
+                    }
+                }
+                std::swap(node->parent, temp->parent);
+                std::swap(node->left, temp->left);
+                std::swap(node->right, temp->right);
+                std::swap(node->height, temp->height);
+                std::swap(node->size, temp->size);
+
+                node = temp;
+
+                // if(node->left != nullptr){
+                //     node->left->parent = temp;
+                // }
+                // if(node->right != nullptr){
+                //     node->right->parent = temp;
+                // }
+                // if(node->parent != nullptr){
+                //     if(node->parent->left == node){
+                //         node->parent->left = temp;
+                //     }else{
+                //         node->parent->right = temp;
+                //     }
+                // }
+
+                // if(temp->left != nullptr){
+                //     temp->left->parent = node;
+                // }
+                // if(temp->right != nullptr){
+                //     temp->right->parent = node;
+                // }
+                // if(temp->parent != nullptr){
+                //     if(temp->parent->left == temp){
+                //         temp->parent->left = node;
+                //     }else{
+                //         temp->parent->right = node;
+                //     }
+                // }
+
+                // std::swap(node->parent, temp->parent);
+                // std::swap(node->left, temp->left);
+                // std::swap(node->right, temp->right);
+                // std::swap(node->height, temp->height);
+                // std::swap(node->size, temp->size);
+
+                // node = temp;
+
+                
+                // node->value = temp->value;
                 node->right = eraseAtNode(node->right, 0);
             }
         }
@@ -296,7 +384,7 @@ private:
         return node;
     }
 
-    void updateHeight(Node* c_root){
+    void updateHeight(Node<T>* c_root){
         if(c_root == nullptr) return;
 
         int val = 1;
@@ -313,7 +401,7 @@ private:
         c_root->height = val;
     }
 
-    Node* root;
+    Node<T>* root;
 };
 
 
@@ -421,18 +509,23 @@ int main() {
                 }
             }
         }
-
+        bool correct = true;
         // Compare and print results
         if(arr.size() != vec.size()){
             std::cout << "WRONG!!size" << std::endl;
+            correct = false;
         }
         for(size_t i = 0; i < arr.size(); i++){
             if(arr[i] != vec[i]){
                 std::cout << "WRONG!!content" << std::endl;
+                correct = false;
             }
         }
         // Optionally, print the structures
         // [Your code to print arr and vec]
+        if(correct){
+            std::cout << "CORRECT!!" << std::endl;
+        }
     }
 
 }
